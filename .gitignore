@@ -1,0 +1,57 @@
+# ========================
+# Environment & Credentials
+# ========================
+includes/database.php
+.env
+.env.*
+config.php
+
+# ========================
+# User Uploads
+# ========================
+reservasi/uploads/*
+!reservasi/uploads/.gitkeep
+
+# ========================
+# OS Generated Files
+# ========================
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ========================
+# IDE & Editor Files
+# ========================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+.project
+.settings/
+nbproject/
+
+# ========================
+# Logs & Temp Files
+# ========================
+*.log
+*.tmp
+*.cache
+error_log
+
+# ========================
+# Composer (jika digunakan)
+# ========================
+/vendor/
+composer.lock
+
+# ========================
+# Node (jika digunakan)
+# ========================
+/node_modules/
+package-lock.json

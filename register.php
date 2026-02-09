@@ -1,104 +1,83 @@
 <?php
-session_start();
-if (isset($_SESSION['username'])) {
-    header("Location: index.php");
+// Global Config
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+$base_path = './';
+
+include 'includes/database.php';
+
+// Hanya proses POST, selain itu redirect ke login
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+    header("Location: login.php?mode=register");
+    exit();
+}
+
+$nama = $_POST['nama'];
+$email = $_POST['email'];
+$username = $_POST['username'];
+$password = $_POST['password'];
+$hashed_password = password_hash($password, PASSWORD_DEFAULT);
+$level = 'user';
+
+// Cek apakah username sudah ada
+$check_sql = "SELECT * FROM user WHERE username = ?";
+$check_stmt = $conn->prepare($check_sql);
+$check_stmt->bind_param("s", $username);
+$check_stmt->execute();
+$check_result = $check_stmt->get_result();
+
+if ($check_result->num_rows > 0) {
+    $check_stmt->close();
+    $conn->close();
+    header("Location: login.php?mode=register&register_error=" . urlencode("Username sudah terdaftar."));
+    exit();
+}
+$check_stmt->close();
+
+// Cek apakah email sudah ada
+$check_email_sql = "SELECT * FROM data_user WHERE email = ?";
+$check_email_stmt = $conn->prepare($check_email_sql);
+$check_email_stmt->bind_param("s", $email);
+$check_email_stmt->execute();
+$check_email_result = $check_email_stmt->get_result();
+
+if ($check_email_result->num_rows > 0) {
+    $check_email_stmt->close();
+    $conn->close();
+    header("Location: login.php?mode=register&register_error=" . urlencode("Email sudah terdaftar."));
+    exit();
+}
+$check_email_stmt->close();
+
+// Mulai transaksi
+$conn->begin_transaction();
+try {
+    $sql_user = "INSERT INTO user (username, password, level) VALUES (?, ?, ?)";
+    $stmt_user = $conn->prepare($sql_user);
+    $stmt_user->bind_param("sss", $username, $hashed_password, $level);
+    $stmt_user->execute();
+
+    $sql_data_user = "INSERT INTO data_user (username, nama, email) VALUES (?, ?, ?)";
+    $stmt_data_user = $conn->prepare($sql_data_user);
+    $stmt_data_user->bind_param("sss", $username, $nama, $email);
+    $stmt_data_user->execute();
+
+    $conn->commit();
+
+    $stmt_user->close();
+    $stmt_data_user->close();
+    $conn->close();
+
+    header("Location: login.php?register=success");
+    exit();
+} catch (mysqli_sql_exception $exception) {
+    $conn->rollback();
+    if (isset($stmt_user)) $stmt_user->close();
+    if (isset($stmt_data_user)) $stmt_data_user->close();
+    $conn->close();
+
+    header("Location: login.php?mode=register&register_error=" . urlencode("Registrasi gagal. Silakan coba lagi."));
     exit();
 }
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
-    <script src="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
-    <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
-    <title>Register Page</title>
-    <style>
-        body {
-            font-family: "Lato", sans-serif;
-        }
-        .main-head{
-            height: 150px;
-            background: #FFF;
-        }
-        .sidenav {
-            height: 100%;
-            background-color: #000;
-            overflow-x: hidden;
-            padding-top: 20px;
-        }
-        .main {
-            padding: 0px 10px;
-        }
-        @media screen and (max-height: 450px) {
-            .sidenav {padding-top: 15px;}
-        }
-        @media screen and (max-width: 450px) {
-            .login-form, .register-form {
-                margin-top: 10%;
-            }
-        }
-        @media screen and (min-width: 768px) {
-            .main {
-                margin-left: 40%; 
-            }
-            .sidenav {
-                width: 40%;
-                position: fixed;
-                z-index: 1;
-                top: 0;
-                left: 0;
-            }
-            .register-form {
-                margin-top: 20%;
-            }
-        }
-        .login-main-text {
-            margin-top: 20%;
-            padding: 60px;
-            color: #fff;
-        }
-        .login-main-text h2 {
-            font-weight: 300;
-        }
-        .btn-black {
-            background-color: #000 !important;
-            color: #fff;
-        }
-    </style>
-</head>
-<body>
-    <div class="sidenav">
-        <div class="login-main-text">
-            <h2>Application<br> Register Page</h2>
-            <p>Register here to get access.</p>
-        </div>
-    </div>
-    <div class="main">
-        <div class="col-md-6 col-sm-12">
-            <div class="register-form">
-                <form action="reg.php" method="POST">
-                    <div class="form-group">
-                        <label>Username</label>
-                        <input type="text" name="username" class="form-control" placeholder="Username" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Password</label>
-                        <input type="password" name="password" class="form-control" placeholder="Password" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Name</label>
-                        <input type="text" name="name" class="form-control" placeholder="Name" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" name="email" class="form-control" placeholder="Email" required>
-                    </div>
-                    <button type="submit" class="btn btn-black">Register</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</body>
-</html>

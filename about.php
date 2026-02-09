@@ -1,217 +1,235 @@
-<!doctype html>
-<html lang="en">
-    <head>
-        <title>Title</title>
-        <!-- Required meta tags -->
-        <meta charset="utf-8" />
-        <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1, shrink-to-fit=no"
-        />
+<?php
+// Global Config
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+$isLoggedIn = isset($_SESSION['username']);
+$base_path = './';
+$page_title = 'Tentang Kami - Taman Cerdas Salatiga';
 
-        <!-- Bootstrap CSS v5.2.1 -->
-        <link
-            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
-            rel="stylesheet"
-            integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
-            crossorigin="anonymous"
-        />
-    </head>
+include 'includes/database.php';
+?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo $page_title; ?></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="<?php echo $base_path; ?>assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo $base_path; ?>assets/css/about.css">
+</head>
+<body>
 
-    <body>
-        <header>
-            <?php include 'layout/header.html'; ?>
-        </header>
-        <main>
-            <!-- About Us Page Section Begin -->
-       <section class="aboutus-page-section spad" style="margin-top: 100px; margin-left:80px;">
+<?php include 'includes/header.php'; ?>
+
+<main>
+    <!-- Page Header -->
+    <section class="about-header">
         <div class="container">
-            <div class="about-page-text">
-                <div class="row">
-                    <div class="col-lg-6">
-                        <div class="ap-title">
-                            <h2>Selamat Datang di Taman Cerdas</h2>
-                            <p>Taman Cerdas di Kota Salatiga menggabungkan alam, teknologi, dan pendidikan. 
-                                Ruang interaktif yang memberikan pengalaman edukatif dan menghibur untuk semua usia.</p>
+            <div class="about-header-content">
+                <span class="page-badge">Tentang Kami</span>
+                <h1>Mengenal Taman Cerdas Salatiga</h1>
+                <p>Inovasi, edukasi, dan rekreasi di jantung Kota Salatiga.</p>
+                <nav class="breadcrumb-nav">
+                    <a href="<?php echo $base_path; ?>index.php">Home</a>
+                    <i class="bi bi-chevron-right"></i>
+                    <span>About Us</span>
+                </nav>
+            </div>
+        </div>
+    </section>
+
+    <!-- Our Story Section -->
+    <section class="about-story">
+        <div class="container">
+            <div class="story-grid">
+                <div class="story-text">
+                    <span class="section-label">Cerita Kami</span>
+                    <h2>Ruang Publik yang Menginspirasi</h2>
+                    <p>Taman Cerdas di Kota Salatiga adalah sebuah inovasi yang memadukan elemen alam, teknologi, dan pendidikan. Ruang cerdas dan interaktif ini dirancang untuk memberikan pengalaman yang mendidik dan menghibur bagi pengunjung dari segala usia.</p>
+                    <p>Dengan berbagai fasilitas modern seperti taman bermain edukatif dan spot informasi interaktif, kami bertujuan untuk menginspirasi minat dan pengetahuan anak-anak dalam berbagai disiplin ilmu, seraya menjadi pusat kegiatan komunitas yang dinamis.</p>
+                    <div class="story-highlights">
+                        <div class="highlight-item">
+                            <div class="highlight-icon">
+                                <i class="bi bi-calendar-check"></i>
+                            </div>
+                            <div>
+                                <strong>Berdiri Sejak 2020</strong>
+                                <span>Melayani masyarakat Salatiga</span>
+                            </div>
+                        </div>
+                        <div class="highlight-item">
+                            <div class="highlight-icon">
+                                <i class="bi bi-people"></i>
+                            </div>
+                            <div>
+                                <strong>500+ Pengunjung</strong>
+                                <span>Setiap bulannya</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-lg-5 offset-lg-1">
-                        <ul class="ap-services">
-                            <li><i class="icon_check"></i> Tingkatkan literasi</li>
-                            <li><i class="icon_check"></i> TIngkatkan UMKM daerah sekitara</li>
-                            <li><i class="icon_check"></i> Discount 15% reservasi</li>
-                            <li><i class="icon_check"></i> Free Wifi.</li>
+                </div>
+                <div class="story-image">
+                    <img src="<?php echo $base_path; ?>assets/images/Taman.jpg" alt="Suasana Taman Cerdas">
+                    <div class="image-badge">
+                        <i class="bi bi-pin-map-fill"></i>
+                        <span>Salatiga, Jawa Tengah</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Vision & Mission Section -->
+    <section class="about-vision">
+        <div class="container">
+            <div class="vision-grid">
+                <div class="vision-card">
+                    <div class="vision-icon">
+                        <i class="bi bi-eye"></i>
+                    </div>
+                    <h3>Visi</h3>
+                    <p>Menjadi ruang publik terdepan yang mengintegrasikan rekreasi, teknologi, dan pendidikan untuk menciptakan masyarakat yang cerdas, kreatif, dan berwawasan lingkungan.</p>
+                    <ul class="vision-list">
+                        <li><i class="bi bi-check2"></i> Ruang publik terdepan</li>
+                        <li><i class="bi bi-check2"></i> Integrasi teknologi & pendidikan</li>
+                        <li><i class="bi bi-check2"></i> Masyarakat cerdas & kreatif</li>
+                    </ul>
+                </div>
+                <div class="vision-card">
+                    <div class="vision-icon">
+                        <i class="bi bi-bullseye"></i>
+                    </div>
+                    <h3>Misi</h3>
+                    <p>Menyediakan fasilitas edukatif yang inovatif, menyelenggarakan acara komunitas yang inspiratif, dan mempromosikan gaya hidup berkelanjutan bagi seluruh warga Salatiga.</p>
+                    <ul class="vision-list">
+                        <li><i class="bi bi-check2"></i> Fasilitas edukatif inovatif</li>
+                        <li><i class="bi bi-check2"></i> Acara komunitas inspiratif</li>
+                        <li><i class="bi bi-check2"></i> Gaya hidup berkelanjutan</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Numbers Section -->
+    <section class="about-numbers">
+        <div class="container">
+            <div class="numbers-grid">
+                <div class="number-item">
+                    <span class="number-value">8+</span>
+                    <span class="number-label">Fasilitas Tersedia</span>
+                </div>
+                <div class="number-item">
+                    <span class="number-value">500+</span>
+                    <span class="number-label">Pengunjung / Bulan</span>
+                </div>
+                <div class="number-item">
+                    <span class="number-value">50+</span>
+                    <span class="number-label">Event / Tahun</span>
+                </div>
+                <div class="number-item">
+                    <span class="number-value">4.8</span>
+                    <span class="number-label">Rating Pengunjung</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Facilities Section -->
+    <section class="about-facilities">
+        <div class="container">
+            <div class="section-header-about">
+                <span class="section-label">Fasilitas</span>
+                <h2>Fasilitas Kami</h2>
+                <p>Berbagai fasilitas yang tersedia untuk mendukung kegiatan Anda di Taman Cerdas.</p>
+            </div>
+
+            <div class="facilities-showcase-grid">
+                <!-- Pendopo -->
+                <div class="facility-showcase-card">
+                    <div class="facility-showcase-image">
+                        <img src="<?php echo $base_path; ?>assets/images/Pendopo.jpg" alt="Pendopo">
+                        <span class="facility-showcase-badge">Populer</span>
+                    </div>
+                    <div class="facility-showcase-body">
+                        <h3>Pendopo</h3>
+                        <p>Area serbaguna yang cocok untuk berbagai acara, dari pertemuan komunitas hingga kegiatan budaya.</p>
+                        <ul class="facility-showcase-features">
+                            <li><i class="bi bi-check-circle-fill"></i> Kapasitas max 70 orang</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Free WiFi</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Akses Toilet</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Area serbaguna</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Ruang Baca -->
+                <div class="facility-showcase-card">
+                    <div class="facility-showcase-image">
+                        <img src="<?php echo $base_path; ?>assets/images/Ruang_baca.jpg" alt="Ruang Baca">
+                        <span class="facility-showcase-badge">Favorit</span>
+                    </div>
+                    <div class="facility-showcase-body">
+                        <h3>Ruang Baca</h3>
+                        <p>Ruang baca nyaman dengan koleksi buku lengkap, ideal untuk kegiatan literasi dan diskusi.</p>
+                        <ul class="facility-showcase-features">
+                            <li><i class="bi bi-check-circle-fill"></i> Kapasitas max 35 orang</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Free WiFi</li>
+                            <li><i class="bi bi-check-circle-fill"></i> 1000+ Koleksi Buku</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Akses Toilet</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Taman Bermain -->
+                <div class="facility-showcase-card">
+                    <div class="facility-showcase-image">
+                        <img src="<?php echo $base_path; ?>assets/images/Taman Bermain.jpg" alt="Taman Bermain">
+                        <span class="facility-showcase-badge">Anak-anak</span>
+                    </div>
+                    <div class="facility-showcase-body">
+                        <h3>Taman Bermain</h3>
+                        <p>Area bermain aman dan edukatif untuk anak-anak dengan berbagai wahana menarik.</p>
+                        <ul class="facility-showcase-features">
+                            <li><i class="bi bi-check-circle-fill"></i> Kapasitas max 15 anak</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Area bermain aman</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Tempat tunggu orang tua</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Alat bermain edukatif</li>
                         </ul>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
-    <!-- About Us Page Section End -->
-    <section class="deskripsi" style="margin-top: 70px">
-        <div class="row justify-content-center">
-            <div class="col-7 text-center d-flex flex-column align-items-center"> <!-- Menggunakan flexbox untuk memposisikan konten secara tengah -->
-                <div class="img-container">
-                    <img src="gallery/foto_taman-cerdas_01122023-002934.png" alt="Pendopo" class="img-fluid" style="width: 100%; height: auto; object-fit: cover;">
-                </div>
-                <div class="text-card" style="text-align: justify;"> <!-- Tambahkan style untuk teks rata halaman -->
-                    Taman Cerdas di Kota Salatiga adalah sebuah inovasi yang memadukan elemen alam, teknologi, dan pendidikan. Taman ini menjadi ruang yang cerdas dan interaktif yang dirancang untuk memberikan pengalaman yang mendidik dan menghibur bagi pengunjung dari segala usia.                            
-                </div>
-                <br>
-                <div class="text-card" style="text-align: justify;"> <!-- Tambahkan style untuk teks rata halaman -->
-                    Taman Cerdas menawarkan berbagai fasilitas modern, seperti taman bermain cerdas yang dilengkapi dengan permainan edukatif, serta spot-spot informasi interaktif yang mengajak pengunjung untuk belajar tentang lingkungan dan teknologi. Ini adalah tempat yang ideal untuk menginspirasi minat dan pengetahuan anak-anak dalam berbagai disiplin ilmu.
-                </div>
-                <br>
-                <div class="text-card" style="text-align: justify;"> <!-- Tambahkan style untuk teks rata halaman -->
-                    Selain itu, taman ini sering menjadi tuan rumah untuk berbagai acara edukatif dan hiburan yang menyatukan masyarakat. Ini menciptakan atmosfer yang dinamis dan penuh semangat di taman.                            
-                </div>
-                <br>
-                <div class="text-card" style="text-align: justify;"> <!-- Tambahkan style untuk teks rata halaman -->
-                    Taman Cerdas adalah perpaduan unik antara alam dan teknologi yang menciptakan pengalaman yang unik bagi pengunjung. Ini adalah tempat yang mengingatkan kita akan pentingnya pendidikan dan inovasi dalam menjalani kehidupan sehari-hari. Taman ini mempromosikan pembelajaran yang menyenangkan dan merayakan semangat pengetahuan.                            
-                </div>
+
+            <div class="facilities-cta-link">
+                <a href="<?php echo $base_path; ?>event.php" class="btn-see-pricing">
+                    <i class="bi bi-tag"></i>
+                    Lihat Harga & Reservasi
+                </a>
             </div>
         </div>
     </section>
-    
-    <style>
-        .text-right {
-            text-align: right; /* Untuk meratakan teks ke kanan */
-        }
-    </style>
-    
-    
-        <div class="breadcrumb-section py-3 bg-light">
-            <div class="container">
-                <div class="row">
-                    <div class="col-lg-12">
-                        <div class="breadcrumb-text text-center">
-                            <h2>Reservasi</h2>
-                            <div class="bt-option d-flex justify-content-center">
-                                <a href="./home.html" class="text-decoration-none">Home</a>
-                                <span class="mx-2">/</span>
-                                <span>Area</span>
-                            </div>
-                        </div>
-                    </div>
+
+    <!-- CTA Section -->
+    <section class="about-cta">
+        <div class="container">
+            <div class="cta-box">
+                <div class="cta-text">
+                    <h2>Tertarik Berkunjung?</h2>
+                    <p>Reservasi fasilitas kami sekarang dan nikmati pengalaman edukatif bersama keluarga.</p>
                 </div>
+                <a href="<?php echo $base_path; ?>reservasi/reservasi.php" class="btn-cta-about">
+                    <i class="bi bi-calendar-check"></i>
+                    Mulai Reservasi
+                </a>
             </div>
         </div>
-        <!-- Breadcrumb Section End -->
+    </section>
+</main>
 
-        <!-- Rooms Section Begin -->
-        <section class="rooms-section py-5">
-            <div class="container">
-                <div class="row">
-                    <div class="col-lg-4 col-md-6 mb-4">
-                        <div class="room-item card border-0 shadow-sm">
-                            <img src="img/room/room-1.jpg" class="card-img-top" alt="PENDOPO">
-                            <div class="card-body">
-                                <h4 class="card-title">Pendopo</h4>
-                                <h3 class="card-text">Rp50.000<span>/Per hari</span></h3>
-                                <table class="table table-borderless">
-                                    <tbody>
-                                        <tr>
-                                            <td class="fw-bold">Ukuran:</td>
-                                            <td>1 lantai</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Kapasitas:</td>
-                                            <td>Max 7 orang</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Service:</td>
-                                            <td>Free Wifi, Toilet,..</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <a href="#" class="btn btn-primary">Lihat detail</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4 col-md-6 mb-4">
-                        <div class="room-item card border-0 shadow-sm">
-                            <img src="img/room/room-2.jpg" class="card-img-top" alt="RUANG BACA">
-                            <div class="card-body">
-                                <h4 class="card-title">Ruang Baca</h4>
-                                <h3 class="card-text">Rp60.000<span>/Per sehari</span></h3>
-                                <table class="table table-borderless">
-                                    <tbody>
-                                        <tr>
-                                            <td class="fw-bold">Ukuran:</td>
-                                            <td>Lantai 2</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Kapasitas:</td>
-                                            <td>Max 35 orang</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Services:</td>
-                                            <td>Free Wifi, Buku, Toilet,..</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <a href="#" class="btn btn-primary">Lihat detail</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4 col-md-6 mb-4">
-                        <div class="room-item card border-0 shadow-sm">
-                            <img src="img/room/room-3.jpg" class="card-img-top" alt="TAMAN BERMAIN">
-                            <div class="card-body">
-                                <h4 class="card-title">Taman Bermain</h4>
-                                <h3 class="card-text">Rp45.000<span>/Per hari</span></h3>
-                                <table class="table table-borderless">
-                                    <tbody>
-                                        <tr>
-                                            <td class="fw-bold">Ukuran:</td>
-                                            <td></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Kapasitas:</td>
-                                            <td>Max 15 orang</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Services:</td>
-                                            <td>Free Wifi, Tempat tunggu, Toilet,..</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <a href="#" class="btn btn-primary">Lihat detail</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-12">
-                        <nav aria-label="Page navigation">
-                            <ul class="pagination justify-content-center">
-                                <li class="page-item"><a class="page-link" href="#">1</a></li>
-                                <li class="page-item"><a class="page-link" href="#">2</a></li>
-                                <li class="page-item">
-                                    <a class="page-link" href="#" aria-label="Next">
-                                        Next <i class="bi bi-arrow-right"></i>
-                                    </a>
-                                </li>
-                            </ul>
-                        </nav>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <!-- Rooms Section End -->
-        </main>
-        <footer>
-            <!-- place footer here -->
-        </footer>
-        <!-- Bootstrap JavaScript Libraries -->
-        <script
-            src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
-            integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
-            crossorigin="anonymous"
-        ></script>
+<?php include 'includes/footer.php'; ?>
 
-        <script
-            src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"
-            integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+"
-            crossorigin="anonymous"
-        ></script>
-    </body>
+</body>
 </html>

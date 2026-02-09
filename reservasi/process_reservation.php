@@ -1,71 +1,106 @@
 <?php
-session_start(); // Pastikan session sudah dimulai
+session_start();
+include '../includes/database.php';
 
-// Pengecekan apakah pengguna sudah login
 if (!isset($_SESSION['username'])) {
-    // Jika belum login, kembalikan respons yang sesuai
-    echo "Anda belum login!";
+    header("Location: ../login.php");
     exit();
 }
 
-// Ambil data dari POST
-$name = $_POST['name'];
-$startDate = $_POST['startDate'];
-$endDate = $_POST['endDate'];
-$pendopo = ($_POST['pendopo'] === 'true') ? 1 : 0;
-$ruangBaca = ($_POST['ruangBaca'] === 'true') ? 1 : 0;
-$tamanBermain = ($_POST['tamanBermain'] === 'true') ? 1 : 0;
-
-// Hitung biaya
-$totalHari = strtotime($endDate) - strtotime($startDate);
-$totalHari = floor($totalHari / (60 * 60 * 24)) + 1; // Menghitung hari, tambahkan 1 karena inklusif
-$biayaDasar = $totalHari * 100000;
-$biayaAddOns = 0;
-
-if ($pendopo) {
-    $biayaAddOns += 25000;
-}
-if ($ruangBaca) {
-    $biayaAddOns += 25000;
-}
-if ($tamanBermain) {
-    $biayaAddOns += 25000;
+if (!isset($_SESSION['temp_reservation'])) {
+    header("Location: reservasi.php");
+    exit();
 }
 
-$totalBayar = $biayaDasar + $biayaAddOns;
+$temp_data = $_SESSION['temp_reservation'];
 
-// Simpan ke database (sesuaikan dengan skema tabel yang telah Anda buat)
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "tr_rpl";
-
-// Membuat koneksi ke database
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-// Mengecek koneksi
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+// Pastikan semua data yang dibutuhkan ada
+if (
+    !isset($temp_data['nama_penyewa']) ||
+    !isset($temp_data['tanggal_mulai']) ||
+    !isset($temp_data['tanggal_selesai']) ||
+    !isset($temp_data['pendopo']) ||
+    !isset($temp_data['ruang_baca']) ||
+    !isset($temp_data['taman_bermain']) ||
+    !isset($temp_data['total_bayar'])
+) {
+    header("Location: reservasi.php?error=incomplete");
+    exit();
 }
 
-// Query untuk memasukkan data reservasi
-$sql = "INSERT INTO reservasi (username, nama_penyewa, tanggal_mulai, tanggal_selesai, status, pendopo, ruang_baca, taman_bermain, total_bayar) 
-        VALUES ('" . $conn->real_escape_string($_SESSION['username']) . "', 
-                '" . $conn->real_escape_string($name) . "', 
-                '" . $conn->real_escape_string($startDate) . "', 
-                '" . $conn->real_escape_string($endDate) . "', 
-                'Pending', 
-                '" . $pendopo . "', 
-                '" . $ruangBaca . "', 
-                '" . $tamanBermain . "', 
-                '" . $totalBayar . "')";
+$username = $_SESSION['username'];
+$nama_penyewa = $temp_data['nama_penyewa'];
+$tanggal_mulai = $temp_data['tanggal_mulai'];
+$tanggal_selesai = $temp_data['tanggal_selesai'];
+$pendopo = $temp_data['pendopo'];
+$ruang_baca = $temp_data['ruang_baca'];
+$taman_bermain = $temp_data['taman_bermain'];
+$total_bayar = $temp_data['total_bayar'];
+$status = 'pending';
 
-if ($conn->query($sql) === TRUE) {
-    echo "Reservasi berhasil diproses!";
+// Cek apakah ada file upload (opsional)
+$has_file = isset($_FILES['bukti_transfer']) && $_FILES['bukti_transfer']['error'] === UPLOAD_ERR_OK;
+
+if ($has_file) {
+    $file = $_FILES['bukti_transfer'];
+    $allowed_types = ['image/jpeg', 'image/png', 'image/jpg'];
+    $max_size = 2 * 1024 * 1024; // 2MB
+
+    // Validasi tipe file
+    if (!in_array($file['type'], $allowed_types)) {
+        header("Location: reservasi.php?error=invalid_type");
+        exit();
+    }
+
+    // Validasi ekstensi
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if (!in_array($ext, ['jpg', 'jpeg', 'png'])) {
+        header("Location: reservasi.php?error=invalid_ext");
+        exit();
+    }
+
+    // Validasi ukuran
+    if ($file['size'] > $max_size) {
+        header("Location: reservasi.php?error=too_large");
+        exit();
+    }
+}
+
+// INSERT reservasi
+$sql = "INSERT INTO reservasi (username, nama_penyewa, tanggal_mulai, tanggal_selesai, status, pendopo, ruang_baca, taman_bermain, total_bayar, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("sssssiiii", $username, $nama_penyewa, $tanggal_mulai, $tanggal_selesai, $status, $pendopo, $ruang_baca, $taman_bermain, $total_bayar);
+
+if ($stmt->execute()) {
+    $reservation_id = $conn->insert_id;
+
+    // Upload file jika ada
+    if ($has_file) {
+        $safe_username = preg_replace('/[^a-zA-Z0-9_-]/', '', $username);
+        $new_filename = $reservation_id . '-' . $safe_username . '.' . $ext;
+        $upload_dir = __DIR__ . '/uploads/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0755, true);
+        }
+        $upload_path = $upload_dir . $new_filename;
+
+        if (move_uploaded_file($file['tmp_name'], $upload_path)) {
+            $sql_update = "UPDATE reservasi SET bukti_transfer = ? WHERE id = ?";
+            $stmt_update = $conn->prepare($sql_update);
+            $stmt_update->bind_param("si", $new_filename, $reservation_id);
+            $stmt_update->execute();
+            $stmt_update->close();
+        }
+    }
+
+    unset($_SESSION['temp_reservation']);
+    header("Location: ../user/index.php?status=success_reserve");
 } else {
-    echo "Terjadi kesalahan saat memproses reservasi: " . $conn->error;
+    echo "Error: " . $stmt->error;
 }
 
-// Tutup koneksi
+$stmt->close();
 $conn->close();
+exit();
 ?>

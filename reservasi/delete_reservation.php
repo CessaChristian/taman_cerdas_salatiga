@@ -1,45 +1,29 @@
 <?php
 session_start();
+include '../includes/database.php'; // Menggunakan koneksi database terpusat
+
 if (!isset($_SESSION['username'])) {
-    header("Location: login.html");
+    header("Location: ../login.php");
     exit();
 }
-
-$loggedInUsername = $_SESSION['username'];
 
 if (isset($_GET['id'])) {
-    $reservationId = $_GET['id'];
+    $reservation_id = $_GET['id'];
+    $username = $_SESSION['username']; // Hanya izinkan user menghapus reservasi miliknya sendiri
 
-    $servername = "localhost";
-    $username = "root";
-    $password = "";
-    $dbname = "tr_rpl";
-
-    // Membuat koneksi ke database
-    $conn = new mysqli($servername, $username, $password, $dbname);
-
-    // Mengecek koneksi
-    if ($conn->connect_error) {
-        die("Connection failed: " . $conn->connect_error);
-    }
-
-    // Menghapus reservasi berdasarkan ID dan username
-    $sql = "DELETE FROM reservasi WHERE id = ? AND username = ? AND status = 'Pending'";
+    $sql = "DELETE FROM reservasi WHERE id = ? AND username = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("is", $reservationId, $loggedInUsername);
+    $stmt->bind_param("is", $reservation_id, $username);
 
     if ($stmt->execute()) {
-        echo "Reservasi berhasil dihapus.";
+        header("Location: data.php"); // Kembali ke daftar reservasi
     } else {
-        echo "Gagal menghapus reservasi.";
+        echo "Error: " . $stmt->error;
     }
-
     $stmt->close();
     $conn->close();
-
-    header("Location: data.php");
-    exit();
 } else {
-    echo "ID reservasi tidak ditemukan.";
+    header("Location: data.php");
 }
+exit();
 ?>

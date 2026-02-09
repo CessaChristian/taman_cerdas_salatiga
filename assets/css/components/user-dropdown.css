@@ -1,0 +1,25 @@
+.user-dropdown .dropdown-toggle {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: #212529; /* Warna teks default untuk navbar terang */
+}
+
+.user-dropdown .dropdown-toggle::after {
+    margin-left: 0.5em; /* Jarak antara nama dan panah dropdown */
+}
+
+.user-dropdown .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 10px;
+    border: 2px solid #e9ecef;
+}
+
+.user-dropdown .dropdown-menu {
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border: 1px solid #f1f1f1;
+}

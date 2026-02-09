@@ -1,0 +1,43 @@
+.facility-price-card {
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.facility-price-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.facility-price-card .card-img-top {
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    height: 200px;
+    object-fit: cover;
+}
+
+.facility-price-card .card-body {
+    padding: 1.5rem;
+}
+
+.facility-price-card .price {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #0d6efd;
+}
+
+.facility-price-card .price span {
+    font-size: 1rem;
+    font-weight: 400;
+    color: #6c757d;
+}
+
+.facility-price-card .features-table {
+    margin-bottom: 1.5rem;
+}
+
+.facility-price-card .features-table td {
+    padding: 0.25rem 0;
+    border: none;
+}

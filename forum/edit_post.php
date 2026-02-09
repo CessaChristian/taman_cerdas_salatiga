@@ -5,19 +5,84 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 $isLoggedIn = isset($_SESSION['username']);
 $base_path = '../';
-$page_title = 'Buat Postingan Baru - Forum';
+$page_title = 'Edit Postingan - Forum';
 
-// Page-specific includes
 include '../includes/database.php';
 
-// Jika pengguna belum login, arahkan ke halaman login
 if (!$isLoggedIn) {
     header("Location: " . $base_path . "login.php");
     exit();
 }
 
+$postId = $_GET['id'] ?? 0;
+if (!filter_var($postId, FILTER_VALIDATE_INT) || $postId <= 0) {
+    header("Location: index.php");
+    exit();
+}
+
 $username = $_SESSION['username'];
 $userName = $_SESSION['nama'];
+
+// Ambil data post
+$sql = "SELECT * FROM post WHERE id = ? AND username = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("is", $postId, $username);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows === 0) {
+    header("Location: index.php");
+    exit();
+}
+
+$post = $result->fetch_assoc();
+$stmt->close();
+
+// Cek deadline 24 jam
+$created = new DateTime($post['created_at']);
+$deadline = clone $created;
+$deadline->modify('+24 hours');
+$now = new DateTime();
+
+if ($now > $deadline) {
+    header("Location: post_details.php?id=" . $postId);
+    exit();
+}
+
+$remaining = $now->diff($deadline);
+
+// Handle POST update
+$edit_message = '';
+$edit_type = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $newTitle = trim($_POST['postTitle'] ?? '');
+    $newContent = trim($_POST['postContent'] ?? '');
+
+    if (empty($newTitle) || empty($newContent)) {
+        $edit_message = 'Judul dan isi postingan tidak boleh kosong.';
+        $edit_type = 'error';
+    } else {
+        $update_sql = "UPDATE post SET title = ?, content = ?, updated_at = NOW() WHERE id = ? AND username = ?";
+        $update_stmt = $conn->prepare($update_sql);
+        $update_stmt->bind_param("ssis", $newTitle, $newContent, $postId, $username);
+
+        if ($update_stmt->execute()) {
+            header("Location: post_details.php?id=" . $postId . "&edited=1");
+            exit();
+        } else {
+            $edit_message = 'Gagal menyimpan perubahan. Silakan coba lagi.';
+            $edit_type = 'error';
+        }
+        $update_stmt->close();
+    }
+
+    // Update local data for form
+    $post['title'] = $newTitle;
+    $post['content'] = $newContent;
+}
+
+$conn->close();
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -41,14 +106,16 @@ $userName = $_SESSION['nama'];
         <div class="container">
             <div class="forum-page-header-content">
                 <span class="page-badge">Forum</span>
-                <h1>Buat Postingan Baru</h1>
-                <p>Bagikan pikiran, pertanyaan, atau informasi dengan komunitas</p>
+                <h1>Edit Postingan</h1>
+                <p>Perbarui judul atau isi postingan Anda</p>
                 <nav class="breadcrumb-nav">
                     <a href="<?php echo $base_path; ?>index.php">Home</a>
                     <i class="bi bi-chevron-right"></i>
                     <a href="index.php">Forum</a>
                     <i class="bi bi-chevron-right"></i>
-                    <span>Buat Postingan</span>
+                    <a href="post_details.php?id=<?php echo $postId; ?>">Postingan</a>
+                    <i class="bi bi-chevron-right"></i>
+                    <span>Edit</span>
                 </nav>
             </div>
         </div>
@@ -62,16 +129,23 @@ $userName = $_SESSION['nama'];
                 <div class="forum-create-main">
                     <div class="forum-create-card">
                         <div class="forum-create-card-header">
-                            <div class="card-header-icon">
+                            <div class="card-header-icon edit">
                                 <i class="bi bi-pencil-square"></i>
                             </div>
                             <div>
-                                <h2>Tulis Postingan</h2>
-                                <p>Isi judul dan konten postingan Anda</p>
+                                <h2>Edit Postingan</h2>
+                                <p>Ubah judul atau isi postingan #<?php echo $postId; ?></p>
                             </div>
                         </div>
 
-                        <form action="process_post.php" method="POST" id="postForm" class="forum-create-form">
+                        <?php if (!empty($edit_message)): ?>
+                        <div class="forum-alert <?php echo $edit_type; ?>">
+                            <i class="bi bi-exclamation-circle-fill"></i>
+                            <span><?php echo $edit_message; ?></span>
+                        </div>
+                        <?php endif; ?>
+
+                        <form action="edit_post.php?id=<?php echo $postId; ?>" method="POST" id="editForm" class="forum-create-form">
                             <!-- Title -->
                             <div class="form-field">
                                 <label for="postTitle" class="form-field-label">
@@ -85,10 +159,11 @@ $userName = $_SESSION['nama'];
                                     class="form-field-input"
                                     placeholder="Tulis judul yang menarik..."
                                     maxlength="255"
+                                    value="<?php echo htmlspecialchars($post['title']); ?>"
                                     required
                                 >
                                 <div class="form-field-hint">
-                                    <span id="titleCount">0</span>/255 karakter
+                                    <span id="titleCount"><?php echo strlen($post['title']); ?></span>/255 karakter
                                 </div>
                             </div>
 
@@ -120,21 +195,21 @@ $userName = $_SESSION['nama'];
                                     placeholder="Tulis isi postingan Anda di sini..."
                                     rows="12"
                                     required
-                                ></textarea>
+                                ><?php echo htmlspecialchars($post['content']); ?></textarea>
                                 <div class="form-field-hint">
-                                    <span id="contentCount">0</span> karakter
+                                    <span id="contentCount"><?php echo strlen($post['content']); ?></span> karakter
                                 </div>
                             </div>
 
                             <!-- Actions -->
                             <div class="forum-create-actions">
-                                <a href="index.php" class="btn-forum-cancel">
+                                <a href="post_details.php?id=<?php echo $postId; ?>" class="btn-forum-cancel">
                                     <i class="bi bi-arrow-left"></i>
-                                    Kembali
+                                    Batal
                                 </a>
                                 <button type="submit" class="btn-forum-submit" id="btnSubmit">
-                                    <i class="bi bi-send"></i>
-                                    Kirim Postingan
+                                    <i class="bi bi-check-lg"></i>
+                                    Simpan Perubahan
                                 </button>
                             </div>
                         </form>
@@ -143,11 +218,33 @@ $userName = $_SESSION['nama'];
 
                 <!-- Sidebar -->
                 <div class="forum-create-sidebar">
+                    <!-- Edit Deadline -->
+                    <div class="sidebar-card">
+                        <div class="sidebar-card-header">
+                            <i class="bi bi-clock"></i>
+                            <h3>Batas Edit</h3>
+                        </div>
+                        <div class="edit-deadline-info">
+                            <div class="deadline-countdown">
+                                <div class="countdown-item">
+                                    <span class="countdown-number"><?php echo $remaining->h; ?></span>
+                                    <span class="countdown-label">Jam</span>
+                                </div>
+                                <span class="countdown-separator">:</span>
+                                <div class="countdown-item">
+                                    <span class="countdown-number"><?php echo str_pad($remaining->i, 2, '0', STR_PAD_LEFT); ?></span>
+                                    <span class="countdown-label">Menit</span>
+                                </div>
+                            </div>
+                            <p class="deadline-note">Postingan hanya dapat diedit dalam 24 jam setelah dibuat.</p>
+                        </div>
+                    </div>
+
                     <!-- Author Card -->
                     <div class="sidebar-card">
                         <div class="sidebar-card-header">
                             <i class="bi bi-person-circle"></i>
-                            <h3>Posting Sebagai</h3>
+                            <h3>Author</h3>
                         </div>
                         <div class="author-info">
                             <div class="author-avatar">
@@ -160,45 +257,25 @@ $userName = $_SESSION['nama'];
                         </div>
                     </div>
 
-                    <!-- Guidelines Card -->
+                    <!-- Post Info -->
                     <div class="sidebar-card">
                         <div class="sidebar-card-header">
                             <i class="bi bi-info-circle"></i>
-                            <h3>Panduan Posting</h3>
+                            <h3>Info Postingan</h3>
                         </div>
-                        <ul class="guidelines-list">
-                            <li>
-                                <i class="bi bi-check2"></i>
-                                <span>Gunakan judul yang jelas dan deskriptif</span>
-                            </li>
-                            <li>
-                                <i class="bi bi-check2"></i>
-                                <span>Tulis konten yang informatif dan sopan</span>
-                            </li>
-                            <li>
-                                <i class="bi bi-check2"></i>
-                                <span>Hindari spam atau konten tidak pantas</span>
-                            </li>
-                            <li>
-                                <i class="bi bi-check2"></i>
-                                <span>Hormati pendapat dan privasi orang lain</span>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <!-- Preview Card -->
-                    <div class="sidebar-card">
-                        <div class="sidebar-card-header">
-                            <i class="bi bi-eye"></i>
-                            <h3>Preview</h3>
-                        </div>
-                        <div class="post-preview">
-                            <h4 class="preview-title" id="previewTitle">Judul postingan Anda...</h4>
-                            <div class="preview-meta">
-                                <span><i class="bi bi-person"></i> <?php echo htmlspecialchars($userName); ?></span>
-                                <span><i class="bi bi-clock"></i> Baru saja</span>
+                        <div class="post-info-list">
+                            <div class="post-info-item">
+                                <span class="post-info-label">ID Postingan</span>
+                                <span class="post-info-value">#<?php echo $postId; ?></span>
                             </div>
-                            <p class="preview-content" id="previewContent">Isi postingan akan muncul di sini...</p>
+                            <div class="post-info-item">
+                                <span class="post-info-label">Dibuat</span>
+                                <span class="post-info-value"><?php echo date('d M Y, H:i', strtotime($post['created_at'])); ?></span>
+                            </div>
+                            <div class="post-info-item">
+                                <span class="post-info-label">Batas Edit</span>
+                                <span class="post-info-value"><?php echo $deadline->format('d M Y, H:i'); ?></span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -215,20 +292,13 @@ const titleInput = document.getElementById('postTitle');
 const contentInput = document.getElementById('postContent');
 const titleCount = document.getElementById('titleCount');
 const contentCount = document.getElementById('contentCount');
-const previewTitle = document.getElementById('previewTitle');
-const previewContent = document.getElementById('previewContent');
 
 titleInput.addEventListener('input', function() {
     titleCount.textContent = this.value.length;
-    previewTitle.textContent = this.value || 'Judul postingan Anda...';
-    previewTitle.classList.toggle('placeholder', !this.value);
 });
 
 contentInput.addEventListener('input', function() {
     contentCount.textContent = this.value.length;
-    const text = this.value.substring(0, 150);
-    previewContent.textContent = text ? (text + (this.value.length > 150 ? '...' : '')) : 'Isi postingan akan muncul di sini...';
-    previewContent.classList.toggle('placeholder', !this.value);
 });
 
 // Simple text formatting helpers
@@ -262,10 +332,10 @@ function insertFormat(type) {
 }
 
 // Submit loading state
-document.getElementById('postForm').addEventListener('submit', function() {
+document.getElementById('editForm').addEventListener('submit', function() {
     const btn = document.getElementById('btnSubmit');
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Mengirim...';
+    btn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Menyimpan...';
 });
 </script>
 

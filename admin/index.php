@@ -1,252 +1,174 @@
 <?php
-session_start();
-if ($_SESSION['level'] !== 'admin') {
-    header("Location: login.html");
+// Global Config
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+$isLoggedIn = isset($_SESSION['username']);
+$base_path = '../';
+$page_title = 'Dashboard';
+
+// Keamanan: Pastikan hanya admin yang bisa mengakses halaman ini
+if (!$isLoggedIn || $_SESSION['level'] !== 'admin') {
+    header("Location: " . $base_path . "login.php");
     exit();
 }
 
-$loggedInUsername = $_SESSION['username'];
+include '../includes/database.php';
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "tr_rpl";
+// Ambil data statistik untuk dashboard
+$total_reservasi = $conn->query("SELECT COUNT(*) AS total FROM reservasi")->fetch_assoc()['total'];
+$pending_reservasi = $conn->query("SELECT COUNT(*) AS total FROM reservasi WHERE status = 'pending'")->fetch_assoc()['total'];
+$disetujui_reservasi = $conn->query("SELECT COUNT(*) AS total FROM reservasi WHERE status = 'disetujui'")->fetch_assoc()['total'];
+$ditolak_reservasi = $conn->query("SELECT COUNT(*) AS total FROM reservasi WHERE status = 'ditolak'")->fetch_assoc()['total'];
+$total_user = $conn->query("SELECT COUNT(*) AS total FROM user WHERE level = 'user'")->fetch_assoc()['total'];
+$total_post = $conn->query("SELECT COUNT(*) AS total FROM post")->fetch_assoc()['total'];
 
-// Membuat koneksi ke database
-$conn = new mysqli($servername, $username, $password, $dbname);
+// Reservasi terbaru untuk tabel
+$recent_sql = "SELECT * FROM reservasi ORDER BY id DESC LIMIT 5";
+$recent_result = $conn->query($recent_sql);
 
-// Mengecek koneksi
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+// Pending count untuk sidebar badge
+$pending_count = $pending_reservasi;
 
-// Mengambil parameter sort dari URL
-$sort = isset($_GET['sort']) ? $_GET['sort'] : 'tanggal_mulai';
-$order = isset($_GET['order']) ? $_GET['order'] : 'ASC';
-
-// Validasi nilai sort dan order
-$valid_sort_columns = ['tanggal_mulai'];
-if (!in_array($sort, $valid_sort_columns)) {
-    $sort = 'tanggal_mulai';
-}
-if ($order != 'ASC' && $order != 'DESC') {
-    $order = 'ASC';
-}
-
-// Mengambil semua data dari tabel reservasi
-$sql = "SELECT * FROM reservasi ORDER BY $sort $order";
-$result = $conn->query($sql);
-
-// Fungsi untuk mengupdate status reservasi
-if (isset($_POST['update_status'])) {
-    $id = $_POST['id'];
-    $status = $_POST['status'];
-    
-    $update_sql = "UPDATE reservasi SET status = ? WHERE id = ?";
-    $stmt = $conn->prepare($update_sql);
-    $stmt->bind_param("si", $status, $id);
-    $stmt->execute();
-    header("Location: " . $_SERVER['PHP_SELF']);
-    exit();
-}
-
-// Fungsi untuk konfirmasi pembayaran dan ubah status menjadi "Selesai"
-if (isset($_POST['confirm_payment'])) {
-    $id = $_POST['id'];
-    
-    $update_sql = "UPDATE reservasi SET status = 'Selesai' WHERE id = ?";
-    $stmt = $conn->prepare($update_sql);
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    header("Location: " . $_SERVER['PHP_SELF']);
-    exit();
-}
-
+$conn->close();
 ?>
-
-<?php include '../layout/headerlogin.html'; ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Reservasi</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link
-            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
-            rel="stylesheet"
-            integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
-            crossorigin="anonymous"
-        />
+    <title><?php echo $page_title; ?> - Admin Taman Cerdas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="<?php echo $base_path; ?>assets/css/admin.css">
 </head>
-<body>
-    <div class="container mt-5">
-        <h1 class="text-center mb-4">Data Reservasi</h1>
-        <div class="row">
-<!-- Card untuk Jumlah Reservasi Masuk -->
-<div class="col-md-6 mb-3">
-    <div class="card h-100 bg-primary text-white">
-        <div class="card-body">
-            <h5 class="card-title">Jumlah Reservasi Masuk</h5>
-            <p class="card-text"><?php echo $result->num_rows; ?></p>
-        </div>
-    </div>
-</div>
-<!-- Card untuk Jumlah Reservasi Ditolak -->
-<div class="col-md-6 mb-3">
-    <div class="card h-100 bg-danger text-white">
-        <div class="card-body">
-            <h5 class="card-title">Jumlah Reservasi Ditolak</h5>
-            <?php
-            $query_reservasi_ditolak = "SELECT COUNT(*) AS total_ditolak FROM reservasi WHERE status = 'Ditolak'";
-            $result_reservasi_ditolak = $conn->query($query_reservasi_ditolak);
-            $row_reservasi_ditolak = $result_reservasi_ditolak->fetch_assoc();
-            ?>
-            <p class="card-text"><?php echo $row_reservasi_ditolak['total_ditolak']; ?></p>
-        </div>
-    </div>
-</div>
-<!-- Card untuk Jumlah Reservasi Diterima -->
-<div class="col-md-4 mb-3">
-    <div class="card h-100 bg-success text-white">
-        <div class="card-body">
-            <h5 class="card-title">Jumlah Reservasi Diterima</h5>
-            <?php
-            $query_reservasi_diterima = "SELECT COUNT(*) AS total_diterima FROM reservasi WHERE status = 'Acc'";
-            $result_reservasi_diterima = $conn->query($query_reservasi_diterima);
-            $row_reservasi_diterima = $result_reservasi_diterima->fetch_assoc();
-            ?>
-            <p class="card-text"><?php echo $row_reservasi_diterima['total_diterima']; ?></p>
-        </div>
-    </div>
-</div>
-<!-- Card untuk Jumlah Pembayaran -->
-<div class="col-md-4 mb-3">
-    <div class="card h-100 bg-info text-white">
-        <div class="card-body">
-            <h5 class="card-title">Total Pembayaran</h5>
-            <?php
-            $query_total_pembayaran = "SELECT SUM(total_bayar) AS total_pembayaran FROM reservasi WHERE status != 'Ditolak'";
-            $result_total_pembayaran = $conn->query($query_total_pembayaran);
-            $row_total_pembayaran = $result_total_pembayaran->fetch_assoc();
-            ?>
-            <p class="card-text">Rp <?php echo number_format($row_total_pembayaran['total_pembayaran'], 0, ',', '.'); ?></p>
-        </div>
-    </div>
-</div>
-<!-- Card untuk Jumlah Pembayaran Diterima -->
-<div class="col-md-4 mb-3">
-    <div class="card h-100 bg-warning text-dark">
-        <div class="card-body">
-            <h5 class="card-title">Total Pembayaran Diterima</h5>
-            <?php
-            $query_pembayaran_diterima = "SELECT SUM(total_bayar) AS total_pembayaran_diterima FROM reservasi WHERE status = 'Selesai'";
-            $result_pembayaran_diterima = $conn->query($query_pembayaran_diterima);
-            $row_pembayaran_diterima = $result_pembayaran_diterima->fetch_assoc();
-            ?>
-            <p class="card-text">Rp <?php echo number_format($row_pembayaran_diterima['total_pembayaran_diterima'], 0, ',', '.'); ?></p>
-        </div>
-    </div>
-</div>
+<body class="admin-body">
 
-        
-        <!-- Tabel Data Reservasi -->
-        <div class="mt-5">
-            <table class="table table-bordered table-striped">
+<?php include '../includes/admin_header.php'; ?>
+
+<main class="admin-content">
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="admin-stat-card">
+            <div class="stat-icon-box blue">
+                <i class="bi bi-calendar-check"></i>
+            </div>
+            <div class="stat-details">
+                <h3><?php echo $total_reservasi; ?></h3>
+                <p>Total Reservasi</p>
+                <a href="reservasi.php" class="stat-link">Lihat detail →</a>
+            </div>
+        </div>
+        <div class="admin-stat-card">
+            <div class="stat-icon-box yellow">
+                <i class="bi bi-hourglass-split"></i>
+            </div>
+            <div class="stat-details">
+                <h3><?php echo $pending_reservasi; ?></h3>
+                <p>Pending</p>
+                <a href="reservasi.php" class="stat-link">Lihat detail →</a>
+            </div>
+        </div>
+        <div class="admin-stat-card">
+            <div class="stat-icon-box green">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <div class="stat-details">
+                <h3><?php echo $disetujui_reservasi; ?></h3>
+                <p>Disetujui</p>
+            </div>
+        </div>
+        <div class="admin-stat-card">
+            <div class="stat-icon-box red">
+                <i class="bi bi-x-circle"></i>
+            </div>
+            <div class="stat-details">
+                <h3><?php echo $ditolak_reservasi; ?></h3>
+                <p>Ditolak</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-row" style="grid-template-columns: repeat(2, 1fr);">
+        <div class="admin-stat-card">
+            <div class="stat-icon-box purple">
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="stat-details">
+                <h3><?php echo $total_user; ?></h3>
+                <p>Jumlah Pengguna</p>
+            </div>
+        </div>
+        <div class="admin-stat-card">
+            <div class="stat-icon-box blue">
+                <i class="bi bi-chat-dots"></i>
+            </div>
+            <div class="stat-details">
+                <h3><?php echo $total_post; ?></h3>
+                <p>Total Post Forum</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Reservations -->
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h2><i class="bi bi-clock-history"></i> Reservasi Terbaru</h2>
+            <a href="reservasi.php" class="stat-link">Lihat semua →</a>
+        </div>
+        <?php if ($recent_result && $recent_result->num_rows > 0): ?>
+        <div class="table-responsive">
+            <table class="admin-table">
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Username</th>
-                        <th>Nama Penyewa</th>
-                        <th>
-                            <a href="?sort=tanggal_mulai&order=<?php echo $order == 'ASC' ? 'DESC' : 'ASC'; ?>">
-                                Tanggal Mulai
-                            </a>
-                        </th>
-                        <th>Tanggal Selesai</th>
+                        <th>Penyewa</th>
+                        <th>Tanggal</th>
+                        <th>Fasilitas</th>
                         <th>Status</th>
-                        <th>Pendopo</th>
-                        <th>Ruang Baca</th>
-                        <th>Taman Bermain</th>
-                        <th>Total Bayar</th>
-                        <th>Bukti Pembayaran</th>
-                        <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
+                    <?php while($row = $recent_result->fetch_assoc()): ?>
                     <?php
-                    if ($result->num_rows > 0) {
-                        // Output data setiap baris
-                        while($row = $result->fetch_assoc()) {
-                            echo "<tr>
-                                    <td>" . htmlspecialchars($row['id']) . "</td>
-                                    <td>" . htmlspecialchars($row['username']) . "</td>
-                                    <td>" . htmlspecialchars($row['nama_penyewa']) . "</td>
-                                    <td>" . htmlspecialchars($row['tanggal_mulai']) . "</td>
-                                    <td>" . htmlspecialchars($row['tanggal_selesai']) . "</td>
-                                    <td>" . htmlspecialchars($row['status']) . "</td>
-                                    <td>" . ($row['pendopo'] ? 'Yes' : 'No') . "</td>
-                                    <td>" . ($row['ruang_baca'] ? 'Yes' : 'No') . "</td>
-                                    <td>" . ($row['taman_bermain'] ? 'Yes' : 'No') . "</td>
-                                    <td>Rp " . number_format($row['total_bayar'], 0, ',', '.') . "</td>
-                                    <td>";
-                                    
-                            // Tampilkan link bukti pembayaran jika status 'Proses' atau 'Selesai'
-                            if ($row['status'] == 'Proses' || $row['status'] == 'Selesai') {
-                                echo "<a href='../reservasi/uploads/" . $row['bukti_transfer'] . "' target='_blank'>Lihat Bukti</a>";
-                            } else {
-                                echo "N/A";
-                            }
-                            
-                            echo "</td><td>";
-                            
-                            // Tombol aksi terima dan tolak
-                            if ($row['status'] == 'Pending') {
-                                echo "<form method='post' style='display:inline-block;'>
-                                        <input type='hidden' name='id' value='" . $row['id'] . "'>
-                                        <input type='hidden' name='status' value='Acc'>
-                                        <button type='submit' name='update_status' class='btn btn-success btn-sm'>Terima</button>
-                                      </form> ";
-                                echo "<form method='post' style='display:inline-block;'>
-                                        <input type='hidden' name='id' value='" . $row['id'] . "'>
-                                        <input type='hidden' name='status' value='Ditolak'>
-                                        <button type='submit' name='update_status' class='btn btn-danger btn-sm'>Tolak</button>
-                                      </form>";
-                            } elseif ($row['status'] == 'Proses') {
-                                echo "<form method='post' style='display:inline-block;'>
-                                        <input type='hidden' name='id' value='" . $row['id'] . "'>
-                                        <button type='submit' name='confirm_payment' class='btn btn-primary btn-sm'>Konfirmasi Pembayaran</button>
-                                      </form>";
-                            } else {
-                                echo "N/A";
-                            }
-                            
-                            echo "</td></tr>";
-                        }
-                    } else {
-                        echo "<tr><td colspan='12' class='text-center'>No data available</td></tr>";
-                    }
+                        $facilities = [];
+                        if ($row['pendopo']) $facilities[] = 'Pendopo';
+                        if ($row['ruang_baca']) $facilities[] = 'R. Baca';
+                        if ($row['taman_bermain']) $facilities[] = 'T. Bermain';
+
+                        $status = $row['status'];
+                        $status_class = $status;
                     ?>
+                    <tr>
+                        <td>#<?php echo $row['id']; ?></td>
+                        <td><?php echo htmlspecialchars($row['nama_penyewa']); ?></td>
+                        <td><?php echo date('d M Y', strtotime($row['tanggal_mulai'])); ?></td>
+                        <td>
+                            <div class="facility-tags">
+                                <?php foreach($facilities as $f): ?>
+                                    <span class="facility-tag"><?php echo $f; ?></span>
+                                <?php endforeach; ?>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="status-badge <?php echo $status_class; ?>">
+                                <?php echo ucfirst($status); ?>
+                            </span>
+                        </td>
+                    </tr>
+                    <?php endwhile; ?>
                 </tbody>
             </table>
         </div>
+        <?php else: ?>
+        <div class="admin-empty">
+            <i class="bi bi-calendar-x"></i>
+            <h3>Belum Ada Reservasi</h3>
+            <p>Data reservasi akan muncul di sini.</p>
+        </div>
+        <?php endif; ?>
     </div>
-    
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script
-            src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
-            integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
-            crossorigin="anonymous"
-        ></script>
+</main>
 
-        <script
-            src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"
-            integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+"
-            crossorigin="anonymous"
-        ></script>
 </body>
 </html>
-
-<?php
-$conn->close();
-?>

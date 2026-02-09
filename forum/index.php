@@ -1,113 +1,161 @@
+<?php
+// Global Config
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+$isLoggedIn = isset($_SESSION['username']);
+$base_path = '../';
+$page_title = 'Forum - Taman Cerdas';
+
+include '../includes/database.php';
+
+// Get posts with reply count
+$sql = "SELECT p.*, COUNT(r.id) as reply_count
+        FROM post p
+        LEFT JOIN replies r ON r.post_id = p.id
+        GROUP BY p.id
+        ORDER BY p.created_at DESC";
+$result = $conn->query($sql);
+$total_posts = $result ? $result->num_rows : 0;
+?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forum Per-Post</title>
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous" />
-    <!-- Custom styles -->
-    <style>
-        .post {
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-            padding: 15px;
-            border-radius: 5px;
-        }
-        .post .post-title {
-            font-size: 20px;
-            margin-bottom: 10px;
-        }
-        .post .post-meta {
-            font-size: 14px;
-            color: #777;
-        }
-        .search-container {
-            max-width: 400px;
-            margin-bottom: 20px;
-        }
-        .create-post-btn {
-            margin-left: 10px;
-        }
-    </style>
+    <title><?php echo $page_title; ?></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="<?php echo $base_path; ?>assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo $base_path; ?>assets/css/components/user-dropdown.css">
+    <link rel="stylesheet" href="<?php echo $base_path; ?>assets/css/forum.css">
 </head>
 <body>
-    <header>
-    <?php include '../layout/header.html'; ?>
-    </header>
-    <div class="container mt-5">
-        <h1 class="text-center mb-4">Forum</h1>
-        
-        <!-- Search Bar and Create Post Button -->
-        <div class="row">
-            <div class="col-md-8">
-                <div class="search-container">
-                    <form action="#" method="GET">
-                        <div class="input-group">
-                            <input type="text" class="form-control" placeholder="Search posts...">
-                            <div class="input-group-append">
-                                <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i></button>
-                            </div>
-                        </div>
-                    </form>
+
+<?php include '../includes/header.php'; ?>
+
+<main>
+    <!-- Page Header -->
+    <section class="forum-page-header">
+        <div class="container">
+            <div class="forum-index-header">
+                <div class="forum-page-header-content">
+                    <span class="page-badge">Komunitas</span>
+                    <h1>Forum Diskusi</h1>
+                    <p>Tempat berbagi ide, pertanyaan, dan informasi seputar Taman Cerdas</p>
                 </div>
-            </div>
-            <div class="col-md-4 text-right">
-                <a href="post.php" class="btn btn-primary btn-lg create-post-btn">Buat Post Baru</a>
+                <a href="post.php" class="btn-new-post">
+                    <i class="bi bi-plus-lg"></i>
+                    Buat Postingan
+                </a>
             </div>
         </div>
-        
-        <?php
-        // Koneksi ke database
-        $servername = "localhost";
-        $username = "root";
-        $password = "";
-        $dbname = "tr_rpl"; // Ganti dengan nama database Anda
+    </section>
 
-        // Membuat koneksi
-        $conn = new mysqli($servername, $username, $password, $dbname);
+    <!-- Forum Content -->
+    <section class="forum-list-section">
+        <div class="container">
+            <!-- Stats Bar -->
+            <div class="forum-stats-bar">
+                <span class="forum-stats-count">
+                    <i class="bi bi-chat-square-text"></i>
+                    <strong><?php echo $total_posts; ?></strong> postingan
+                </span>
+            </div>
 
-        // Memeriksa koneksi
-        if ($conn->connect_error) {
-            die("Connection failed: " . $conn->connect_error);
-        }
+            <!-- Posts List -->
+            <?php if ($result && $result->num_rows > 0): ?>
+                <div class="forum-posts-list">
+                    <?php while($row = $result->fetch_assoc()):
+                        // Time ago helper
+                        $created = new DateTime($row['created_at']);
+                        $now = new DateTime();
+                        $diff = $now->diff($created);
 
-        // Query untuk mengambil data post
-        $sql = "SELECT * FROM post";
-        $result = $conn->query($sql);
+                        if ($diff->days === 0 && $diff->h === 0) {
+                            $time_ago = $diff->i . ' menit lalu';
+                        } elseif ($diff->days === 0) {
+                            $time_ago = $diff->h . ' jam lalu';
+                        } elseif ($diff->days === 1) {
+                            $time_ago = 'Kemarin';
+                        } elseif ($diff->days < 7) {
+                            $time_ago = $diff->days . ' hari lalu';
+                        } else {
+                            $time_ago = date('d M Y', strtotime($row['created_at']));
+                        }
 
-        // Memeriksa apakah ada post yang tersedia
-        if ($result->num_rows > 0) {
-            // Loop untuk menampilkan setiap post
-            while($row = $result->fetch_assoc()) {
-                echo '<div class="post">';
-                echo '<div class="post-title">' . htmlspecialchars($row['title']) . '</div>';
-                echo '<div class="post-meta">Posted by ' . htmlspecialchars($row['username']) . ' on ' . htmlspecialchars($row['created_at']) . '</div>';
-                echo '<div class="post-content">';
-                // Menampilkan cuplikan konten post
-                echo '<p>' . htmlspecialchars(substr($row['content'], 0, 150)) . '...</p>';
-                // Tombol Read More
-                echo '<a href="post_details.php?id=' . $row['id'] . '" class="btn btn-secondary btn-sm">Read More</a>';
-                echo '</div>';
-                echo '</div>';
-            }
-        } else {
-            echo '<div class="alert alert-info">Tidak ada post tersedia.</div>';
-        }
+                        // Editable check
+                        $canEditThis = false;
+                        if ($isLoggedIn && $row['username'] === $_SESSION['username']) {
+                            $deadline = clone $created;
+                            $deadline->modify('+24 hours');
+                            $canEditThis = $now < $deadline;
+                        }
 
-        // Menutup koneksi
-        $conn->close();
-        ?>
-        
-    </div>
+                        $initial = strtoupper(substr($row['username'], 0, 1));
+                    ?>
+                        <a href="post_details.php?id=<?php echo $row['id']; ?>" class="forum-post-item">
+                            <div class="post-item-avatar">
+                                <span><?php echo $initial; ?></span>
+                            </div>
+                            <div class="post-item-content">
+                                <h3 class="post-item-title">
+                                    <?php echo htmlspecialchars($row['title']); ?>
+                                    <?php if (!empty($row['updated_at']) && $row['updated_at'] !== $row['created_at']): ?>
+                                        <span class="post-edited-badge"><i class="bi bi-pencil-square"></i> diedit</span>
+                                    <?php endif; ?>
+                                </h3>
+                                <p class="post-item-excerpt"><?php echo htmlspecialchars(substr($row['content'], 0, 180)); ?>...</p>
+                                <div class="post-item-meta">
+                                    <span class="meta-author">
+                                        <i class="bi bi-person"></i>
+                                        <?php echo htmlspecialchars($row['username']); ?>
+                                    </span>
+                                    <span class="meta-time">
+                                        <i class="bi bi-clock"></i>
+                                        <?php echo $time_ago; ?>
+                                    </span>
+                                    <span class="meta-replies">
+                                        <i class="bi bi-chat-dots"></i>
+                                        <?php echo $row['reply_count']; ?> balasan
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="post-item-actions" onclick="event.stopPropagation();">
+                                <?php if ($canEditThis): ?>
+                                    <a href="edit_post.php?id=<?php echo $row['id']; ?>" class="btn-edit-post-sm" title="Edit" onclick="event.stopPropagation();">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                <?php endif; ?>
+                                <div class="post-item-reply-count">
+                                    <span><?php echo $row['reply_count']; ?></span>
+                                    <i class="bi bi-chat-dots"></i>
+                                </div>
+                            </div>
+                        </a>
+                    <?php endwhile; ?>
+                </div>
+            <?php else: ?>
+                <div class="forum-empty">
+                    <div class="forum-empty-icon">
+                        <i class="bi bi-chat-square-text"></i>
+                    </div>
+                    <h3>Belum Ada Postingan</h3>
+                    <p>Forum masih sepi. Jadilah yang pertama memulai diskusi!</p>
+                    <a href="post.php" class="btn-new-post">
+                        <i class="bi bi-plus-lg"></i>
+                        Buat Postingan Pertama
+                    </a>
+                </div>
+            <?php endif; ?>
+        </div>
+    </section>
+</main>
 
-    <!-- Bootstrap JS and dependencies -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js" integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" crossorigin="anonymous"></script>
+<?php
+$conn->close();
+include '../includes/footer.php';
+?>
+
 </body>
 </html>
