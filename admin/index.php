@@ -1,5 +1,5 @@
 <?php
-// Global Config
+// Global Config nich
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
