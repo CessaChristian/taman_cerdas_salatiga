@@ -1,5 +1,6 @@
 <?php
-session_start();
+include '../includes/security.php';
+app_bootstrap_session();
 include '../includes/database.php';
 
 if (!isset($_SESSION['username'])) {
@@ -8,9 +9,11 @@ if (!isset($_SESSION['username'])) {
 }
 
 if (!isset($_SESSION['temp_reservation'])) {
-    header("Location: reservasi.php");
+    header("Location: reservasi");
     exit();
 }
+
+csrf_validate_or_abort("reservasi?error=csrf");
 
 $temp_data = $_SESSION['temp_reservation'];
 
@@ -24,7 +27,7 @@ if (
     !isset($temp_data['taman_bermain']) ||
     !isset($temp_data['total_bayar'])
 ) {
-    header("Location: reservasi.php?error=incomplete");
+    header("Location: reservasi?error=incomplete");
     exit();
 }
 
@@ -48,20 +51,20 @@ if ($has_file) {
 
     // Validasi tipe file
     if (!in_array($file['type'], $allowed_types)) {
-        header("Location: reservasi.php?error=invalid_type");
+        header("Location: reservasi?error=invalid_type");
         exit();
     }
 
     // Validasi ekstensi
     $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     if (!in_array($ext, ['jpg', 'jpeg', 'png'])) {
-        header("Location: reservasi.php?error=invalid_ext");
+        header("Location: reservasi?error=invalid_ext");
         exit();
     }
 
     // Validasi ukuran
     if ($file['size'] > $max_size) {
-        header("Location: reservasi.php?error=too_large");
+        header("Location: reservasi?error=too_large");
         exit();
     }
 }

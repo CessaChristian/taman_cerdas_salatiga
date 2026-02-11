@@ -1,8 +1,7 @@
 <?php
 // Global Config
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+include '../includes/security.php';
+app_bootstrap_session();
 $isLoggedIn = isset($_SESSION['username']);
 $base_path = '../';
 
@@ -220,6 +219,7 @@ $current_user_initial = $isLoggedIn ? strtoupper(substr($_SESSION['nama'], 0, 1)
                                             <!-- Inline reply form (hidden by default) -->
                                             <div class="inline-reply-form" id="inline-reply-<?php echo $reply['id']; ?>" style="display: none;">
                                                 <form action="process_reply.php" method="POST" onsubmit="handleInlineSubmit(this)">
+                                                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                                                     <input type="hidden" name="post_id" value="<?php echo $postId; ?>">
                                                     <input type="hidden" name="parent_id" value="<?php echo $reply['id']; ?>">
                                                     <input type="hidden" name="reply_to_username" value="<?php echo htmlspecialchars($reply['username']); ?>">
@@ -264,6 +264,7 @@ $current_user_initial = $isLoggedIn ? strtoupper(substr($_SESSION['nama'], 0, 1)
                                     <span>Balas sebagai <strong><?php echo htmlspecialchars($_SESSION['nama']); ?></strong></span>
                                 </div>
                                 <form action="process_reply.php" method="POST" id="replyForm">
+                                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                                     <input type="hidden" name="post_id" value="<?php echo $postId; ?>">
                                     <textarea
                                         name="replyContent"

@@ -1,8 +1,7 @@
 <?php
 // Global Config
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+include '../includes/security.php';
+app_bootstrap_session();
 $isLoggedIn = isset($_SESSION['username']);
 $base_path = '../';
 $page_title = 'Reservasi Saya - Taman Cerdas';
@@ -78,7 +77,12 @@ if (!$isLoggedIn) {
                                         </td>
                                         <td>
                                             <a href="edit_reservation.php?id=<?php echo $row['id']; ?>" class="btn btn-sm btn-outline-primary">Edit</a>
-                                            <a href="delete_reservation.php?id=<?php echo $row['id']; ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Apakah Anda yakin ingin menghapus reservasi ini?');">Hapus</a>
+                                            <form action="delete_reservation.php" method="POST" style="display:inline;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus reservasi ini?');">
+                                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
+                                                <input type="hidden" name="id" value="<?php echo (int) $row['id']; ?>">
+                                                <input type="hidden" name="return_to" value="data">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
+                                            </form>
                                             <?php if ($status == 'disetujui' && empty($row['bukti_transfer'])): ?>
                                                 <a href="upload_payment.php?id=<?php echo $row['id']; ?>" class="btn btn-sm btn-success">Upload Bukti Bayar</a>
                                             <?php endif; ?>

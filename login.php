@@ -1,8 +1,7 @@
 <?php
 // Global Config
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+include 'includes/security.php';
+app_bootstrap_session();
 $isLoggedIn = isset($_SESSION['username']);
 $base_path = './';
 $page_title = 'Login - Taman Cerdas Salatiga';
@@ -26,47 +25,59 @@ if (isset($_SESSION['username'])) {
 
 // Handle login POST
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    csrf_validate_or_abort("login.php");
+
     $user = $_POST['username'];
     $pass = $_POST['password'];
+    $rateLimit = app_login_rate_limit_check($user);
 
-    $sql = "SELECT user.username, user.password, user.level, data_user.nama
-            FROM user
-            JOIN data_user ON user.username = data_user.username
-            WHERE user.username = ?";
+    if (!$rateLimit['allowed']) {
+        $retryMinutes = max(1, (int) ceil(($rateLimit['retry_after'] ?? 60) / 60));
+        $error_message = "Terlalu banyak percobaan login. Coba lagi dalam {$retryMinutes} menit.";
+    } else {
 
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $user);
-    $stmt->execute();
-    $result = $stmt->get_result();
+        $sql = "SELECT user.username, user.password, user.level, data_user.nama
+                FROM user
+                JOIN data_user ON user.username = data_user.username
+                WHERE user.username = ?";
 
-    if ($result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        $hashed_password = $row['password'];
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("s", $user);
+        $stmt->execute();
+        $result = $stmt->get_result();
 
-        if (password_verify($pass, $hashed_password)) {
-            session_regenerate_id(true);
-            $_SESSION['username'] = $row['username'];
-            $_SESSION['nama'] = $row['nama'];
-            $_SESSION['level'] = $row['level'];
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            $hashed_password = $row['password'];
 
-            if ($row['level'] == 'admin') {
-                header("Location: admin/reservasi.php");
+            if (password_verify($pass, $hashed_password)) {
+                app_login_rate_limit_clear($user);
+                session_regenerate_id(true);
+                $_SESSION['username'] = $row['username'];
+                $_SESSION['nama'] = $row['nama'];
+                $_SESSION['level'] = $row['level'];
+
+                if ($row['level'] == 'admin') {
+                    header("Location: admin/reservasi.php");
+                } else {
+                    header("Location: user/index.php");
+                }
+                exit();
             } else {
-                header("Location: user/index.php");
+                app_login_rate_limit_record_failure($user);
+                $error_message = "Username atau Password yang Anda masukkan salah.";
             }
-            exit();
         } else {
+            app_login_rate_limit_record_failure($user);
             $error_message = "Username atau Password yang Anda masukkan salah.";
         }
-    } else {
-        $error_message = "Username atau Password yang Anda masukkan salah.";
+        $stmt->close();
+        $conn->close();
     }
-    $stmt->close();
-    $conn->close();
 }
 
 // Handle redirect params from register.php
-if (isset($_GET['register']) && $_GET['register'] === 'success') {
+if (isset($_GET['register.php']) && $_GET['register.php'] === 'success') {
     $register_success = "Registrasi berhasil! Silakan login dengan akun baru Anda.";
 }
 if (isset($_GET['register_error'])) {
@@ -74,7 +85,7 @@ if (isset($_GET['register_error'])) {
 }
 
 // Determine initial mode
-$initial_mode = (isset($_GET['mode']) && $_GET['mode'] === 'register') || !empty($register_error) ? 'register' : 'login';
+$initial_mode = (isset($_GET['mode']) && $_GET['mode'] === 'register.php') || !empty($register_error) ? 'register.php' : 'login.php';
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -87,7 +98,7 @@ $initial_mode = (isset($_GET['mode']) && $_GET['mode'] === 'register') || !empty
 </head>
 <body class="auth-body">
 
-<div class="auth-container<?php echo $initial_mode === 'register' ? ' register-mode' : ''; ?>" id="authContainer">
+<div class="auth-container<?php echo $initial_mode === 'register.php' ? ' register-mode' : ''; ?>" id="authContainer">
 
     <!-- ============================================
          FORM PANELS (behind the overlay)
@@ -126,6 +137,7 @@ $initial_mode = (isset($_GET['mode']) && $_GET['mode'] === 'register') || !empty
             <?php endif; ?>
 
             <form action="<?php echo $base_path; ?>login.php" method="POST" class="auth-form">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                 <div class="auth-input-group">
                     <label for="login-username">Username</label>
                     <div class="auth-input-wrap">
@@ -185,6 +197,7 @@ $initial_mode = (isset($_GET['mode']) && $_GET['mode'] === 'register') || !empty
             <?php endif; ?>
 
             <form action="<?php echo $base_path; ?>register.php" method="POST" class="auth-form">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                 <div class="auth-input-row">
                     <div class="auth-input-group">
                         <label for="reg-nama">Nama Lengkap</label>
@@ -273,10 +286,10 @@ $initial_mode = (isset($_GET['mode']) && $_GET['mode'] === 'register') || !empty
 
     <!-- Mobile Mode Toggle -->
     <div class="auth-mobile-tabs" id="mobileTabs">
-        <button class="auth-mobile-tab active" data-mode="login" onclick="switchToLogin(event)">
+        <button class="auth-mobile-tab active" data-mode="login.php" onclick="switchToLogin(event)">
             <i class="bi bi-box-arrow-in-right"></i> Masuk
         </button>
-        <button class="auth-mobile-tab" data-mode="register" onclick="switchToRegister(event)">
+        <button class="auth-mobile-tab" data-mode="register.php" onclick="switchToRegister(event)">
             <i class="bi bi-person-plus"></i> Daftar
         </button>
     </div>
@@ -289,13 +302,13 @@ const container = document.getElementById('authContainer');
 function switchToRegister(e) {
     if (e) e.preventDefault();
     container.classList.add('register-mode');
-    updateMobileTabs('register');
+    updateMobileTabs('register.php');
 }
 
 function switchToLogin(e) {
     if (e) e.preventDefault();
     container.classList.remove('register-mode');
-    updateMobileTabs('login');
+    updateMobileTabs('login.php');
 }
 
 function updateMobileTabs(mode) {
@@ -317,8 +330,8 @@ function togglePassword(inputId, iconId) {
 }
 
 // Set initial mobile tabs state
-<?php if ($initial_mode === 'register'): ?>
-updateMobileTabs('register');
+<?php if ($initial_mode === 'register.php'): ?>
+updateMobileTabs('register.php');
 <?php endif; ?>
 </script>
 

@@ -1,8 +1,8 @@
 <?php
 // Global Config
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+include 'includes/security.php';
+app_bootstrap_session();
+
 $isLoggedIn = isset($_SESSION['username']);
 $base_path = './';
 $page_title = 'Taman Cerdas Salatiga - Ruang Edukasi & Rekreasi';
@@ -348,13 +348,13 @@ include 'includes/database.php';
                         </div>
                     </div>
 
-                    <a href="https://maps.google.com/?q=Taman+Cerdas+Salatiga" target="_blank" class="btn-directions">
+                    <a href="https://maps..com/?q=Taman+Cerdas+Salatiga" target="_blank" class="btn-directions">
                         <i class="bi bi-signpost-2-fill"></i>
                         Dapatkan Petunjuk Arah
                     </a>
                 </div>
                 <div class="location-map">
-                    <iframe src="https://www.google.com/maps/embed/v1/place?key=AIzaSyBJCDq0NABcYosN1fNy3cxUEtwRnSNZpmc&q=Taman+Cerdas+Salatiga&zoom=15" loading="lazy"></iframe>
+                    <iframe src="https://www..com/maps/embed/v1/place?key=AIzaSyBJCDq0NABcYosN1fNy3cxUEtwRnSNZpmc&q=Taman+Cerdas+Salatiga&zoom=15" loading="lazy"></iframe>
                 </div>
             </div>
         </div>
@@ -430,7 +430,7 @@ include 'includes/database.php';
                     <i class="bi bi-box-arrow-in-right"></i>
                     Login Sekarang
                 </a>
-                <a href="<?php echo $base_path; ?>register.php" class="btn-login-alert secondary">
+                <a href="<?php echo $base_path; ?>login.php?mode=register" class="btn-login-alert secondary">
                     <i class="bi bi-person-plus"></i>
                     Buat Akun Baru
                 </a>

@@ -1,5 +1,6 @@
 <?php
-session_start();
+include '../includes/security.php';
+app_bootstrap_session();
 
 if (!isset($_SESSION['username'])) {
     header("Location: ../login.php");
@@ -9,6 +10,9 @@ if (!isset($_SESSION['username'])) {
 include '../includes/database.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $post_id = $_POST['post_id'] ?? '';
+    csrf_validate_or_abort("post_details.php?id=" . urlencode((string) $post_id));
+
     $post_id = $_POST['post_id'];
     $content = trim($_POST['replyContent']);
     $username = $_SESSION['username'];

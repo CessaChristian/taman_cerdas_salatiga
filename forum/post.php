@@ -1,8 +1,7 @@
 <?php
 // Global Config
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+include '../includes/security.php';
+app_bootstrap_session();
 $isLoggedIn = isset($_SESSION['username']);
 $base_path = '../';
 $page_title = 'Buat Postingan Baru - Forum';
@@ -72,6 +71,7 @@ $userName = $_SESSION['nama'];
                         </div>
 
                         <form action="process_post.php" method="POST" id="postForm" class="forum-create-form">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                             <!-- Title -->
                             <div class="form-field">
                                 <label for="postTitle" class="form-field-label">

@@ -1,5 +1,6 @@
 <?php
-session_start();
+include '../includes/security.php';
+app_bootstrap_session();
 
 // Periksa apakah pengguna sudah login
 if (!isset($_SESSION['username'])) {
@@ -11,6 +12,8 @@ if (!isset($_SESSION['username'])) {
 include '../includes/database.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    csrf_validate_or_abort("index.php");
+
     $title = $_POST['postTitle'];
     $content = $_POST['postContent'];
     $username = $_SESSION['username'];

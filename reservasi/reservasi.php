@@ -1,8 +1,7 @@
 <?php
 // Global Config
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+include '../includes/security.php';
+app_bootstrap_session();
 $isLoggedIn = isset($_SESSION['username']);
 $base_path = '../';
 $page_title = 'Buat Reservasi - Taman Cerdas';
@@ -231,6 +230,7 @@ $username = $_SESSION['username'];
 
                             <!-- Upload Bukti -->
                             <form id="paymentForm" action="process_reservation.php" method="POST" enctype="multipart/form-data">
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                                 <div class="upload-section">
                                     <label class="upload-label">
                                         <i class="bi bi-image"></i> Upload Bukti Transfer

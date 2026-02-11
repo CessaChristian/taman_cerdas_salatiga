@@ -1,7 +1,6 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+include '../includes/security.php';
+app_bootstrap_session();
 include '../includes/database.php';
 
 // Deteksi apakah request dari AJAX (event.php) atau form biasa (reservasi.php)

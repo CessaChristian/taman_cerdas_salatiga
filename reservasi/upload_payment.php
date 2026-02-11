@@ -1,8 +1,7 @@
 <?php
 // Global Config
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+include '../includes/security.php';
+app_bootstrap_session();
 $isLoggedIn = isset($_SESSION['username']);
 $base_path = '../';
 $page_title = 'Upload Bukti Pembayaran - Taman Cerdas';
@@ -60,6 +59,8 @@ $upload_message = '';
 $upload_type = '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["bukti_transfer"])) {
+csrf_validate_or_abort($base_path . "user/index.php?status=csrf_error");
+
     $file = $_FILES["bukti_transfer"];
 
     if ($file['error'] !== UPLOAD_ERR_OK) {
@@ -222,6 +223,7 @@ $conn->close();
 
                             <!-- Upload Form -->
                             <form action="upload_payment.php?id=<?php echo $reservation_id; ?>" method="POST" enctype="multipart/form-data" id="uploadForm">
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                                 <div class="upload-section">
                                     <label class="upload-label">
                                         <i class="bi bi-image"></i> Upload Bukti Transfer

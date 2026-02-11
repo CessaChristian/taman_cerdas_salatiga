@@ -1,8 +1,7 @@
 <?php
 // Global Config nich
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+include '../includes/security.php';
+app_bootstrap_session();
 $isLoggedIn = isset($_SESSION['username']);
 $base_path = '../';
 $page_title = 'Dashboard';
@@ -22,6 +21,9 @@ $disetujui_reservasi = $conn->query("SELECT COUNT(*) AS total FROM reservasi WHE
 $ditolak_reservasi = $conn->query("SELECT COUNT(*) AS total FROM reservasi WHERE status = 'ditolak'")->fetch_assoc()['total'];
 $total_user = $conn->query("SELECT COUNT(*) AS total FROM user WHERE level = 'user'")->fetch_assoc()['total'];
 $total_post = $conn->query("SELECT COUNT(*) AS total FROM post")->fetch_assoc()['total'];
+$pending_without_proof = $conn->query("SELECT COUNT(*) AS total FROM reservasi WHERE status = 'pending' AND (bukti_transfer IS NULL OR bukti_transfer = '')")->fetch_assoc()['total'];
+$approval_rate = $total_reservasi > 0 ? round(($disetujui_reservasi / $total_reservasi) * 100) : 0;
+$needs_review = $pending_reservasi;
 
 // Reservasi terbaru untuk tabel
 $recent_sql = "SELECT * FROM reservasi ORDER BY id DESC LIMIT 5";
@@ -47,6 +49,42 @@ $conn->close();
 <?php include '../includes/admin_header.php'; ?>
 
 <main class="admin-content">
+    <div class="admin-overview">
+        <div class="overview-content">
+            <h2>Ringkasan Operasional</h2>
+            <p>Kontrol utama untuk memantau reservasi dan memproses antrean admin lebih cepat.</p>
+            <div class="overview-actions">
+                <a href="reservasi" class="overview-btn primary">
+                    <i class="bi bi-calendar2-check"></i>
+                    Kelola Reservasi
+                </a>
+                <a href="<?php echo $base_path; ?>forum/index.php" class="overview-btn secondary" target="_blank">
+                    <i class="bi bi-chat-square-text"></i>
+                    Pantau Forum
+                </a>
+            </div>
+        </div>
+        <div class="overview-metrics">
+            <div class="overview-metric">
+                <span class="metric-label">Approval Rate</span>
+                <strong><?php echo $approval_rate; ?>%</strong>
+                <div class="metric-progress">
+                    <span style="width: <?php echo $approval_rate; ?>%"></span>
+                </div>
+            </div>
+            <div class="overview-metric">
+                <span class="metric-label">Perlu Review</span>
+                <strong><?php echo $needs_review; ?> reservasi</strong>
+                <small>Status pending menunggu keputusan admin</small>
+            </div>
+            <div class="overview-metric warning">
+                <span class="metric-label">Belum Upload Bukti</span>
+                <strong><?php echo $pending_without_proof; ?> reservasi</strong>
+                <small>Perlu dipantau sebelum batas 24 jam</small>
+            </div>
+        </div>
+    </div>
+
     <!-- Stats -->
     <div class="stats-row">
         <div class="admin-stat-card">
@@ -56,7 +94,7 @@ $conn->close();
             <div class="stat-details">
                 <h3><?php echo $total_reservasi; ?></h3>
                 <p>Total Reservasi</p>
-                <a href="reservasi.php" class="stat-link">Lihat detail →</a>
+                <a href="reservasi" class="stat-link">Lihat detail →</a>
             </div>
         </div>
         <div class="admin-stat-card">
@@ -66,7 +104,7 @@ $conn->close();
             <div class="stat-details">
                 <h3><?php echo $pending_reservasi; ?></h3>
                 <p>Pending</p>
-                <a href="reservasi.php" class="stat-link">Lihat detail →</a>
+                <a href="reservasi" class="stat-link">Lihat detail →</a>
             </div>
         </div>
         <div class="admin-stat-card">
@@ -114,7 +152,7 @@ $conn->close();
     <div class="admin-card">
         <div class="admin-card-header">
             <h2><i class="bi bi-clock-history"></i> Reservasi Terbaru</h2>
-            <a href="reservasi.php" class="stat-link">Lihat semua →</a>
+            <a href="reservasi" class="stat-link">Lihat semua →</a>
         </div>
         <?php if ($recent_result && $recent_result->num_rows > 0): ?>
         <div class="table-responsive">

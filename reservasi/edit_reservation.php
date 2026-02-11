@@ -1,8 +1,7 @@
 <?php
 // Global Config
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+include '../includes/security.php';
+app_bootstrap_session();
 $isLoggedIn = isset($_SESSION['username']);
 $base_path = '../';
 $page_title = 'Edit Reservasi - Taman Cerdas';
@@ -47,6 +46,8 @@ $success_message = '';
 
 // Handle form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+csrf_validate_or_abort($base_path . "user/index.php?status=csrf_error");
+
     $new_startDate = $_POST['startDate'];
     $new_endDate = $_POST['endDate'];
     $new_pendopo = in_array('pendopo', $_POST['fasilitas'] ?? []) ? 1 : 0;
@@ -140,6 +141,7 @@ $conn->close();
                         <?php endif; ?>
 
                         <form action="edit_reservation.php?id=<?php echo $reservation_id; ?>" method="POST" class="reservasi-form" id="editForm">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                             <!-- Step 1: Data Penyewa (readonly) -->
                             <div class="form-section">
                                 <div class="form-section-label">

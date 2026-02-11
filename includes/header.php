@@ -1,8 +1,7 @@
 <?php
 // Header dinamis terpusat
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+include_once __DIR__ . '/security.php';
+app_bootstrap_session();
 $isLoggedIn = isset($_SESSION['username']);
 $userName = $_SESSION['nama'] ?? 'Pengguna';
 $base_path = $base_path ?? './';

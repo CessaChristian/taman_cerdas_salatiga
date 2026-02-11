@@ -1,8 +1,7 @@
 <?php
 // Global Config
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+include '../includes/security.php';
+app_bootstrap_session();
 $isLoggedIn = isset($_SESSION['username']);
 $base_path = '../';
 $page_title = 'Edit Postingan - Forum';
@@ -56,6 +55,8 @@ $edit_message = '';
 $edit_type = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_validate_or_abort("post_details.php?id=" . $postId);
+
     $newTitle = trim($_POST['postTitle'] ?? '');
     $newContent = trim($_POST['postContent'] ?? '');
 
@@ -146,6 +147,7 @@ $conn->close();
                         <?php endif; ?>
 
                         <form action="edit_post.php?id=<?php echo $postId; ?>" method="POST" id="editForm" class="forum-create-form">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                             <!-- Title -->
                             <div class="form-field">
                                 <label for="postTitle" class="form-field-label">

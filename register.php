@@ -1,8 +1,7 @@
 <?php
 // Global Config
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+include 'includes/security.php';
+app_bootstrap_session();
 $base_path = './';
 
 include 'includes/database.php';
@@ -12,6 +11,8 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     header("Location: login.php?mode=register");
     exit();
 }
+
+csrf_validate_or_abort("login.php?mode=register&register_error=" . urlencode("Sesi formulir tidak valid. Silakan coba lagi."));
 
 $nama = $_POST['nama'];
 $email = $_POST['email'];

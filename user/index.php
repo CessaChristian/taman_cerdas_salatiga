@@ -1,8 +1,7 @@
 <?php
 // Global Config
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+include '../includes/security.php';
+app_bootstrap_session();
 $isLoggedIn = isset($_SESSION['username']);
 $base_path = '../';
 $page_title = 'Profil Pengguna - Taman Cerdas';
@@ -214,9 +213,14 @@ $member_since = date('F Y');
                                                     <i class="bi bi-upload"></i>
                                                 </a>
                                             <?php endif; ?>
-                                            <a href="<?php echo $base_path; ?>reservasi/delete_reservation.php?id=<?php echo $row['id']; ?>" class="action-btn delete" title="Hapus" onclick="return confirm('Apakah Anda yakin ingin menghapus reservasi ini?');">
-                                                <i class="bi bi-trash"></i>
-                                            </a>
+                                            <form action="<?php echo $base_path; ?>reservasi/delete_reservation.php" method="POST" style="display:inline;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus reservasi ini?');">
+                                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
+                                                <input type="hidden" name="id" value="<?php echo (int) $row['id']; ?>">
+                                                <input type="hidden" name="return_to" value="user">
+                                                <button type="submit" class="action-btn delete" title="Hapus" style="border:none;">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
                                         </div>
                                         <?php if ($status == 'pending' && empty($row['bukti_transfer']) && !empty($row['created_at'])): ?>
                                             <?php

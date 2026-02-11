@@ -1,8 +1,7 @@
 <?php
 // Admin Header/Sidebar Component
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+include_once __DIR__ . '/security.php';
+app_bootstrap_session();
 $isLoggedIn = isset($_SESSION['username']);
 $adminName = $_SESSION['nama'] ?? 'Admin';
 $base_path = $base_path ?? '../';
