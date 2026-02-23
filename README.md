@@ -21,32 +21,6 @@ Sistem informasi dan reservasi fasilitas **Taman Cerdas Salatiga** berbasis web.
 | Styling | Custom CSS (component-based) |
 | Server | Apache (XAMPP / Laragon / LAMP) |
 
-## Struktur Project
-
-```
-taman_cerdas_php/
-├── admin/                  # Panel admin (dashboard, kelola reservasi)
-├── assets/
-│   ├── css/                # Stylesheet per halaman & komponen
-│   └── images/             # Foto fasilitas
-├── forum/                  # Modul forum (post, reply, edit)
-├── includes/
-│   ├── components/         # Komponen reusable (gallery, facilities, dll)
-│   ├── header.php          # Header publik
-│   ├── footer.php          # Footer publik
-│   ├── admin_header.php    # Header admin
-│   ├── auto_cancel.php     # Auto-cancel reservasi expired
-│   └── database.sample.php # Template konfigurasi database
-├── reservasi/              # Modul reservasi (CRUD, upload bukti, cek ketersediaan)
-├── user/                   # Panel user (profil, daftar reservasi)
-├── index.php               # Homepage
-├── about.php               # Halaman tentang
-├── event.php               # Info event & fasilitas
-├── login.php               # Halaman login/register
-├── tr_rpl.sql              # Database schema
-└── README.md
-```
-
 ## Instalasi
 
 ### Prasyarat
@@ -98,46 +72,3 @@ taman_cerdas_php/
    ```
    http://localhost/taman_cerdas_php
    ```
-
-## Database Schema
-
-```
-user            data_user         reservasi
-┌──────────┐   ┌────────────┐   ┌─────────────────┐
-│ username  │──<│ username   │   │ id              │
-│ password  │   │ nama       │   │ username        │>── user
-│ level     │   │ email      │   │ nama_penyewa    │
-└──────────┘   └────────────┘   │ tanggal_mulai   │
-      │                          │ tanggal_selesai  │
-      │         post             │ status           │
-      │        ┌────────────┐   │ pendopo          │
-      └───────<│ username   │   │ ruang_baca       │
-               │ title      │   │ taman_bermain    │
-               │ content    │   │ total_bayar      │
-               │ created_at │   │ bukti_transfer   │
-               └────────────┘   └─────────────────┘
-                     │
-                replies
-               ┌────────────────┐
-               │ post_id        │>── post
-               │ username       │>── user
-               │ content        │
-               │ parent_id      │
-               │ reply_to_user  │
-               └────────────────┘
-```
-
-## Screenshot
-
-> Tambahkan screenshot aplikasi di sini untuk melengkapi portfolio.
-
-| Halaman | Preview |
-|---------|---------|
-| Homepage | _screenshot_ |
-| Reservasi | _screenshot_ |
-| Forum | _screenshot_ |
-| Admin Panel | _screenshot_ |
-
-## Lisensi
-
-Project ini dibuat untuk keperluan akademik dan portfolio.
