@@ -29,51 +29,42 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     $user = $_POST['username'];
     $pass = $_POST['password'];
-    $rateLimit = app_login_rate_limit_check($user);
 
-    if (!$rateLimit['allowed']) {
-        $retryMinutes = max(1, (int) ceil(($rateLimit['retry_after'] ?? 60) / 60));
-        $error_message = "Terlalu banyak percobaan login. Coba lagi dalam {$retryMinutes} menit.";
-    } else {
+    $sql = "SELECT user.username, user.password, user.level, data_user.nama
+            FROM user
+            JOIN data_user ON user.username = data_user.username
+            WHERE user.username = ?";
 
-        $sql = "SELECT user.username, user.password, user.level, data_user.nama
-                FROM user
-                JOIN data_user ON user.username = data_user.username
-                WHERE user.username = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $user);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("s", $user);
-        $stmt->execute();
-        $result = $stmt->get_result();
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        $hashed_password = $row['password'];
 
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            $hashed_password = $row['password'];
+        if (password_verify($pass, $hashed_password)) {
+            session_regenerate_id(true);
+            $_SESSION['username'] = $row['username'];
+            $_SESSION['nama'] = $row['nama'];
+            $_SESSION['level'] = $row['level'];
 
-            if (password_verify($pass, $hashed_password)) {
-                app_login_rate_limit_clear($user);
-                session_regenerate_id(true);
-                $_SESSION['username'] = $row['username'];
-                $_SESSION['nama'] = $row['nama'];
-                $_SESSION['level'] = $row['level'];
-
-                if ($row['level'] == 'admin') {
-                    header("Location: admin/reservasi.php");
-                } else {
-                    header("Location: user/index.php");
-                }
-                exit();
+            if ($row['level'] == 'admin') {
+                header("Location: admin/reservasi.php");
             } else {
-                app_login_rate_limit_record_failure($user);
-                $error_message = "Username atau Password yang Anda masukkan salah.";
+                header("Location: user/index.php");
             }
+            exit();
         } else {
-            app_login_rate_limit_record_failure($user);
+
             $error_message = "Username atau Password yang Anda masukkan salah.";
         }
-        $stmt->close();
-        $conn->close();
+    } else {
+        $error_message = "Username atau Password yang Anda masukkan salah.";
     }
+    $stmt->close();
+    $conn->close();
 }
 
 // Handle redirect params from register.php
